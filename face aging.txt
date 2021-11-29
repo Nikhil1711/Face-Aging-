@@ -1,0 +1,50 @@
+!git clone https://github.com/laxmimerit/Image-
+
+Dataset-for-Age-Prediction.git
+
+!pip install ktrain
+
+%matplotlib inline
+import os
+import ktrain
+from ktrain import vision as vis
+
+import re
+pattern=r'([^/]+)_\d+_\d+_\d+.jpg$'
+p=re.compile(pattern)
+r=p.search('100_0_0_20170112213500903.jpg')
+print(r.group(1))
+
+DATADIR='/content/Image-Dataset-for-Age-Prediction/images'
+
+(train_data,test_data,preproc)=vis.images_from_fname(DATADIR,pattern=pattern,is_regression= True,random_state=42)
+
+vis.print_image_regression_models()
+
+model=vis.image_regression_model('pretrained_resnet50',train_data=train_data,val_data=test_data)
+
+learner=ktrain.get_learner(model=model,train_data=train_data,val_data=test_data,batch_size=64)
+
+#learning rate=1e-4
+
+learner.fit_onecycle(1e-4,2)
+
+learner.freeze(15)
+learner.fit_onecycle(1e-4,2)
+
+predictor=ktrain.get_predictor(learner.model,preproc)
+
+test_data.filenames[10:20]
+
+def show_prediction(fname):
+  fname = DATADIR +'/'+ fname
+  pred = round(predictor.predict_filename(fname)[0])
+  actual=int(p.search(fname).group(1))
+  vis.show_image(fname)
+  print("Predicted Age: %s | Actual Age: %s" % (pred,actual))
+
+show_prediction('65_0_0_20170111201030222.jpg')
+
+
+
+
